@@ -1,0 +1,56 @@
+# Copilot Instructions
+
+## Project goal
+
+Build and maintain a static Nivtec stage calculator using Rust compiled to WebAssembly and a plain HTML/CSS/JavaScript frontend.
+
+## Source of truth
+
+Use the Nivtec PDF as the technical source of truth:
+
+<https://nivtec.com/wp-content/uploads/2024/03/02.-Aufbauregeln-in-ihrer-einfachsten-Form_DE.pdf>
+
+Do not treat the old EVTP calculator as a technical source. It can only inform rough product expectations.
+
+## Technical constraints
+
+- Keep calculation logic in `src/lib.rs`.
+- Keep the browser app framework-free in `web/`.
+- Keep the WASM ABI stable unless all dependent offsets in `web/app.js` are updated together.
+- After Rust changes, rebuild and commit `pkg/nivtec_core.wasm`.
+- Use the Rust version pinned in `.github/workflows/build.yml` when reproducing CI behavior.
+- Do not add server-side runtime requirements unless explicitly requested.
+- Do not add package managers or frontend build tooling unless there is a clear need.
+
+## Nivtec rules currently modeled
+
+- `<80 cm`: no bracing.
+- `80-140 cm`: diagonal bracing by PDF setup schema.
+- `>140-200 cm`: horizontal and diagonal bracing by PDF setup schema.
+- Stages below 6 m width and/or depth need extra internal diagonals; do not invent a universal piece-count formula.
+- Bracing is intentionally shown as a schema/material requirement where the PDF provides patterns instead of a universal quantity formula.
+
+## UI and export expectations
+
+- Overall site design should stay close to `nebensound.com`: black/dark base, white typography, orange `#ed8b1a` accents, uppercase navigation/buttons.
+- Exported PNG drawings should look close to the PDF drawings: white page, black grid, foot dots, START label, Nut/Feder labels, red diagonal arrows, green horizontal bracing where applicable.
+- The exported PNG should be generated from the same technical SVG style as the preview.
+
+## Validation
+
+Run these before proposing a change:
+
+```bash
+cargo fmt --all --check
+cargo build --release --target wasm32-unknown-unknown
+cp target/wasm32-unknown-unknown/release/nivtec_core.wasm pkg/nivtec_core.wasm
+cmp target/wasm32-unknown-unknown/release/nivtec_core.wasm pkg/nivtec_core.wasm
+```
+
+For UI changes, also start a local static server and inspect `web/` in a browser:
+
+```bash
+python3 -m http.server 8765
+```
+
+Open `http://127.0.0.1:8765/web/`.
