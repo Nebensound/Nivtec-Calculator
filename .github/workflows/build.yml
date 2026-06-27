@@ -44,6 +44,7 @@ jobs:
           cp pkg/nivtec_core.wasm dist/pkg/nivtec_core.wasm
           sed -i 's#../pkg/nivtec_core.wasm#./pkg/nivtec_core.wasm#g' dist/app.js
           cat > dist/.htaccess <<'EOF'
+          ModPagespeed off
           AddType application/wasm .wasm
           DirectoryIndex index.html
           EOF

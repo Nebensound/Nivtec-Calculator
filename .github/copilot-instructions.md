@@ -64,7 +64,7 @@ The workflow publishes a flattened static app to branch `deploy`:
 - `web/app.js` -> `app.js`
 - `web/styles.css` -> `styles.css`
 - `pkg/nivtec_core.wasm` -> `pkg/nivtec_core.wasm`
-- `.htaccess` sets `.wasm` to `application/wasm`
+- `.htaccess` disables Plesk/PageSpeed for this app and sets `.wasm` to `application/wasm`
 
 Plesk should deploy the `deploy` branch, not `main`.
 

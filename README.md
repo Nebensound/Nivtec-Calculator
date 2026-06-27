@@ -79,7 +79,7 @@ Plesk sollte deshalb so konfiguriert werden:
 - Deployment: automatisch nach Push
 - Document Root: der von Plesk ausgecheckte Repository-Ordner
 
-Die `.htaccess` im Deploy-Branch setzt den MIME-Type für `.wasm` auf `application/wasm`.
+Die `.htaccess` im Deploy-Branch deaktiviert Plesk/PageSpeed für diese statische App und setzt den MIME-Type für `.wasm` auf `application/wasm`.
 
 Die Action schreibt den WASM-Pfad für den Deploy-Branch automatisch von `../pkg/nivtec_core.wasm` auf `./pkg/nivtec_core.wasm` um.
 
