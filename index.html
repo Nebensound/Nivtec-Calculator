@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>NEBENSOUND — Nivtec Bühnenplaner</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Crect x='14' y='30' width='8' height='20' fill='%23ed8b1a'/%3E%3Crect x='28' y='18' width='8' height='32' fill='%23ed8b1a'/%3E%3Crect x='42' y='24' width='8' height='26' fill='%23ed8b1a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="siteHeader">
+      <a class="brand" href="https://nebensound.com/de/" rel="noopener">
+        <span class="brandMark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span><strong>NEBENSOUND</strong><small>Stage planner</small></span>
+      </a>
+      <nav class="siteNav" aria-label="Seitenbereiche">
+        <a href="#planner">Planung</a>
+        <a href="#material">Material</a>
+        <a href="https://nebensound.com/de/" rel="noopener">nebensound.com</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div>
+        <div class="pill">Nivtec Stage Planner · Rust/WASM</div>
+        <h1>Bühnenplanung im Nebensound-Look.</h1>
+        <p>Material, Raster und PDF-nahe Zeichnung entstehen lokal im Browser. Fachliche Quelle ist das Nivtec-PDF „Aufbauregeln in ihrer einfachsten Form“, nicht das alte Referenztool.</p>
+      </div>
+      <div class="heroActions">
+        <button id="themeButton" type="button" class="button secondary">Design</button>
+        <button id="csvButtonTop" type="button" class="button secondary">CSV Export</button>
+        <button id="mailButtonTop" type="button" class="button primary">Anfrage</button>
+      </div>
+    </section>
+
+    <section id="planner" class="layout">
+      <aside class="controls">
+        <article class="card">
+          <h2>Bühnenmaße</h2>
+          <p class="sub">Breite bis 20 m, Tiefe bis 12 m.</p>
+          <label class="rangeLabel">Breite <strong id="widthValue">8 m</strong></label>
+          <input id="widthRange" type="range" min="0.5" max="20" step="0.5" value="8">
+          <label class="rangeLabel">Tiefe <strong id="depthValue">6 m</strong></label>
+          <input id="depthRange" type="range" min="0.5" max="12" step="0.5" value="6">
+          <div class="two">
+            <label>Breite<input id="widthInput" type="number" min="0.5" max="20" step="0.5" value="8"></label>
+            <label>Tiefe<input id="depthInput" type="number" min="0.5" max="12" step="0.5" value="6"></label>
+          </div>
+          <div id="dimensionWarning" class="alert danger hidden"></div>
+        </article>
+
+        <article class="card">
+          <h2>Ausrichtung</h2>
+          <p id="recommendationText" class="sub">Wird berechnet…</p>
+          <div id="orientationCards" class="two"></div>
+        </article>
+
+        <article class="card">
+          <h2>Fußtyp & Höhe</h2>
+          <p id="footText" class="sub">Steckfuß fest.</p>
+          <div class="two">
+            <button type="button" class="choice active" data-foot="0"><strong>Steckfuß</strong><span>feste Höhe</span></button>
+            <button type="button" class="choice" data-foot="1"><strong>Spindel</strong><span>Layher</span></button>
+          </div>
+          <div id="heightControl"></div>
+        </article>
+
+        <article class="card">
+          <label class="check">
+            <input id="specialToggle" type="checkbox">
+            <span><strong>Reihenübergreifend</strong>Gedrehte Podeste auf Reststreifen erlauben.</span>
+          </label>
+        </article>
+      </aside>
+
+      <section class="content">
+        <div class="mainGrid">
+          <article class="card planCard">
+            <div class="head">
+              <div>
+                <h2>Grundriss</h2>
+                <p class="sub">PDF-nahe technische SVG-Zeichnung: Raster, Fußpunkte, Nut/Feder, START und Verstrebungsmarkierungen.</p>
+              </div>
+              <div class="actions">
+                <button id="pngButton" type="button" class="button secondary small">PNG</button>
+                <button id="csvButton" type="button" class="button secondary small">CSV</button>
+              </div>
+            </div>
+            <div id="plan" class="plan"></div>
+            <div id="legend" class="legend"></div>
+          </article>
+
+          <div class="sideCards">
+            <article class="card">
+              <h2>Kennzahlen</h2>
+              <div id="metrics" class="metrics"></div>
+              <div id="bracing" class="alert"></div>
+            </article>
+
+            <article class="card">
+              <h2>Geländer</h2>
+              <p class="sub">Seiten antippen, Zubehör wird berechnet.</p>
+              <div class="railPicker">
+                <button type="button" data-rail="hinten">↑ hinten</button>
+                <button type="button" data-rail="links">← links</button>
+                <div id="miniStage">8 × 6 m</div>
+                <button type="button" data-rail="rechts">rechts →</button>
+                <button type="button" data-rail="vorne">↓ vorne</button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <article id="material" class="card">
+          <div class="head">
+            <div>
+              <h2>Materialliste</h2>
+              <p class="sub">Podeste, Füße und Geländer werden mengenmäßig berechnet. Verstrebungen werden als PDF-Schema ausgewiesen.</p>
+            </div>
+            <button id="mailButton" type="button" class="button primary small">Anfrage</button>
+          </div>
+          <div class="tableWrap">
+            <table>
+              <thead><tr><th>Pos.</th><th>Artikel</th><th>Art.-Nr.</th><th>Menge</th><th>Einheit</th></tr></thead>
+              <tbody id="materials"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
