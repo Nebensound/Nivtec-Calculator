@@ -21,7 +21,7 @@ const articleNames = {
   4: "Systempodest 1,0×0,5 m",
   5: (code) => `Steckfuß (fest), ${code} cm`,
   6: (code) => `Steckfuß mit Layher-Verstellspindel, ${code} cm`,
-  7: () => "Layher-Gerüstspindel (Ausspindelung gemäß PDF/Hersteller prüfen)",
+  7: () => "Layher-Gerüstspindel (Ausspindelung gemäß Hersteller prüfen)",
   11: "Sicherheitsgeländer 185 cm",
   12: "Sicherheitsgeländer 85 cm",
   13: "Geländer Sonderbreite 50 cm",
@@ -29,8 +29,27 @@ const articleNames = {
   15: "Adapter (Fußaufnahme ohne Fuß)",
   16: "Geländer-Verbinder",
   17: "Eckverbinder (2 Stk. pro Ecke)",
-  18: (code) => `Diagonalverstrebung nach PDF-Aufbauschema 2.2/2.3, Diagonale ${code} mm`,
-  19: "Horizontalverstrebung nach PDF-Aufbauschema 2.3"
+  18: (code) => `Diagonalverstrebung nach Nivtec-Aufbauschema 2.2/2.3, Diagonale ${code} mm`,
+  19: "Horizontalverstrebung nach Nivtec-Aufbauschema 2.3"
+};
+
+const articleNumbers = {
+  1: "NS-NIV-POD-200100",
+  2: "NS-NIV-POD-200050",
+  3: "NS-NIV-POD-100100",
+  4: "NS-NIV-POD-100050",
+  5: (code) => `NS-NIV-FUSS-S-${String(code).padStart(3, "0")}`,
+  6: (code) => `NS-NIV-FUSS-VS-${String(code).padStart(3, "0")}`,
+  7: (code) => `NS-NIV-SPINDEL-${String(code).padStart(3, "0")}`,
+  11: "NS-NIV-GEL-185",
+  12: "NS-NIV-GEL-085",
+  13: "NS-NIV-GEL-050",
+  14: "NS-NIV-ZUB-BOLZEN",
+  15: "NS-NIV-ZUB-ADAPTER",
+  16: "NS-NIV-ZUB-VERBINDER",
+  17: "NS-NIV-ZUB-ECK",
+  18: (code) => `NS-NIV-AUS-DIAG-${code}`,
+  19: "NS-NIV-AUS-HORIZ"
 };
 
 const groupNames = {
@@ -46,6 +65,9 @@ const unitNames = {
   2: "Schema"
 };
 
+const savedTheme = localStorage.getItem("nivtec-theme") || localStorage.getItem("nivtec-rust-theme");
+const browserTheme = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+
 const state = {
   widthHalf: 16,
   depthHalf: 12,
@@ -54,7 +76,7 @@ const state = {
   height: 60,
   special: false,
   rails: { hinten: false, vorne: false, links: false, rechts: false },
-  theme: localStorage.getItem("nivtec-rust-theme") || "dark"
+  theme: savedTheme || browserTheme
 };
 
 let wasm;
@@ -73,12 +95,9 @@ function articleText(code, artCode) {
 }
 
 function artNumber(code, artCode) {
-  if ([5, 6, 7, 18, 19].includes(code)) return "-";
-  if ([11, 12, 13].includes(code)) return "—";
-  if (!artCode) return code >= 11 ? "—" : "-";
-  const text = String(artCode);
-  if (text.length === 6) return `Nr. ${text.slice(0, 3)} ${text.slice(3, 5)} ${text.slice(5)}`;
-  return `Nr. ${artCode}`;
+  const value = articleNumbers[code];
+  if (typeof value === "function") return value(artCode);
+  return value || `NS-NIV-${String(code).padStart(3, "0")}`;
 }
 
 async function initWasm() {
@@ -164,7 +183,9 @@ function materialKey(widthHalf, depthHalf, type) {
 }
 
 function updateDimension(kind, value) {
-  const half = Math.round(Number(value) * 2);
+  const numeric = Number(String(value).trim().replace(",", "."));
+  if (!Number.isFinite(numeric)) return;
+  const half = Math.round(numeric * 2);
   if (kind === "width") {
     state.widthHalf = Math.min(40, Math.max(1, half));
     if ((state.widthHalf % 4 === 1 || state.widthHalf % 4 === 3) && state.depthHalf % 2 === 1) {
@@ -175,6 +196,13 @@ function updateDimension(kind, value) {
     state.depthHalf = Math.min(24, Math.max(step, Math.round(half / step) * step));
   }
   syncRecommended();
+  render();
+}
+
+function updateHeight(value) {
+  const numeric = Number(String(value).trim().replace(",", "."));
+  if (!Number.isFinite(numeric)) return;
+  state.height = Math.min(200, Math.max(20, Math.round(numeric)));
   render();
 }
 
@@ -232,14 +260,11 @@ function renderHeight(calc) {
   const spSize = calc.data[22];
   $("footText").textContent = state.footType === 0
     ? `${base} cm · Steckfuß fest — keine Spindel`
-    : `${base} cm · Spindelfuß, Ausspindelung gemäß PDF prüfen`;
+    : `${state.height} cm · Grundfuß ${base} cm + Layher-Spindel${spSize ? ` ${spSize} cm` : ""}`;
   if (state.footType === 0) {
-    $("heightControl").innerHTML = `<div class="heightButtons">${[20, 40, 60, 80, 100, 120, 140].map((height) => {
-      const disabled = height === 140;
-      return `<button type="button" data-height="${height}" class="${state.height === height ? "active" : ""}" ${disabled ? "disabled" : ""}>${height} cm</button>`;
-    }).join("")}</div>`;
+    $("heightControl").innerHTML = `<div class="heightButtons">${[20, 40, 60, 80, 100, 120].map((height) => `<button type="button" data-height="${height}" class="${state.height === height ? "active" : ""}">${height} cm</button>`).join("")}</div>`;
   } else {
-    $("heightControl").innerHTML = `<label class="rangeLabel">Bühnenhöhe <strong>${state.height} cm</strong></label><input id="heightRange" type="range" min="40" max="200" step="5" value="${state.height}"><p class="sub">PDF: <80 cm ohne Verstrebung, 80-140 cm diagonal, >140-200 cm horizontal + diagonal.</p>`;
+    $("heightControl").innerHTML = `<label class="rangeLabel" for="heightRange">Bühnenhöhe <strong>${state.height} cm</strong></label><input id="heightRange" type="range" min="20" max="200" step="1" value="${state.height}"><label class="heightNumber" for="heightInput"><span>Exakte Höhe</span><span><input id="heightInput" type="number" min="20" max="200" step="1" value="${state.height}"> cm</span></label><p class="sub">Individuelle Höhen wie 46 cm sind über Spindelfüße abbildbar. Nivtec-Regel: <80 cm ohne Verstrebung, 80-140 cm diagonal, >140-200 cm horizontal + diagonal.</p>`;
   }
   document.querySelectorAll("[data-height]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -249,10 +274,11 @@ function renderHeight(calc) {
   });
   const range = $("heightRange");
   if (range) {
-    range.addEventListener("input", (event) => {
-      state.height = Number(event.target.value);
-      render();
-    });
+    range.addEventListener("input", (event) => updateHeight(event.target.value));
+  }
+  const input = $("heightInput");
+  if (input) {
+    input.addEventListener("input", (event) => updateHeight(event.target.value));
   }
 }
 
@@ -301,10 +327,10 @@ function planGeometry(calc) {
 }
 
 function bracingModeLabel(mode) {
-  if (mode === 0) return "PDF 2.1: <80 cm ohne Verstrebung";
-  if (mode === 1) return "PDF 2.2: 80-140 cm Diagonalverstrebung";
-  if (mode === 2) return "PDF 2.3: >140-200 cm Horizontal + Diagonal";
-  return "Außerhalb PDF-Abschnitt";
+  if (mode === 0) return "Nivtec 2.1: <80 cm ohne Verstrebung";
+  if (mode === 1) return "Nivtec 2.2: 80-140 cm Diagonalverstrebung";
+  if (mode === 2) return "Nivtec 2.3: >140-200 cm Horizontal + Diagonal";
+  return "Außerhalb dieses Regelabschnitts";
 }
 
 function technicalPlanSvg(calc, exportMode = false) {
@@ -421,7 +447,7 @@ function technicalPlanSvg(calc, exportMode = false) {
   const selectedRailsLabel = selectedRails ? `<text x="${geom.width / 2}" y="${geom.depth + 0.48 * scale}" text-anchor="middle" fill="#ed8b1a" font-size="${smallFont}" font-weight="700">Geländer markiert</text>` : "";
   const bracingText = xmlEscape(bracingModeLabel(mode));
 
-  return `<svg id="stageSvg" viewBox="${viewX} ${viewY} ${viewWidth} ${viewHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PDF-nahe technische Zeichnung ${fmt(geom.width)} mal ${fmt(geom.depth)} Meter" preserveAspectRatio="xMidYMid meet">
+  return `<svg id="stageSvg" viewBox="${viewX} ${viewY} ${viewWidth} ${viewHeight}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Technische Zeichnung ${fmt(geom.width)} mal ${fmt(geom.depth)} Meter" preserveAspectRatio="xMidYMid meet">
     <defs>
       <marker id="redArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
         <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef1f28"></path>
@@ -457,7 +483,7 @@ function technicalPlanSvg(calc, exportMode = false) {
 function renderPlan(calc) {
   $("plan").innerHTML = technicalPlanSvg(calc, false);
   const tags = [
-    { label: "PDF-nahe Zeichnung", color: "#111" },
+    { label: "Technische Zeichnung", color: "#111" },
     { label: "Fußpositionen", color: "#111" },
     { label: "Nut/Feder-Markierung", color: "#ef1f28" }
   ];
@@ -481,13 +507,13 @@ function renderMetrics(calc) {
   const smallStage = calc.data[27] === 1;
   $("bracing").className = `alert ${mode > 0 ? "warn" : ""}`;
   if (mode === 0) {
-    $("bracing").textContent = "PDF 2.1: Keine Verstrebung erforderlich (<80 cm).";
+    $("bracing").textContent = "Nivtec 2.1: Keine Verstrebung erforderlich (<80 cm).";
   } else if (mode === 1) {
-    $("bracing").textContent = `PDF 2.2: Diagonalverstrebung nach Aufbauschema erforderlich, Diagonale ${diagonalLength} mm.${smallStage ? " Kleinbühne: zusätzliche Innendiagonalen prüfen." : ""}`;
+    $("bracing").textContent = `Nivtec 2.2: Diagonalverstrebung nach Aufbauschema erforderlich, Diagonale ${diagonalLength} mm.${smallStage ? " Kleinbühne: zusätzliche Innendiagonalen prüfen." : ""}`;
   } else if (mode === 2) {
-    $("bracing").textContent = `PDF 2.3: Horizontal- und Diagonalverstrebung nach Aufbauschema erforderlich, Diagonale ${diagonalLength} mm. Keine pauschale Stückzahlfreigabe.`;
+    $("bracing").textContent = `Nivtec 2.3: Horizontal- und Diagonalverstrebung nach Aufbauschema erforderlich, Diagonale ${diagonalLength} mm. Keine pauschale Stückzahlfreigabe.`;
   } else {
-    $("bracing").textContent = "Höhe >200 cm: außerhalb dieses PDF-Abschnitts, separate Statik/Herstellerfreigabe nötig.";
+    $("bracing").textContent = "Höhe >200 cm: außerhalb dieses Regelabschnitts, separate Statik/Herstellerfreigabe nötig.";
   }
 }
 
@@ -511,6 +537,7 @@ function renderMaterials(calc) {
 
 function render() {
   document.documentElement.dataset.theme = state.theme;
+  $("themeButton").textContent = state.theme === "light" ? "Dunkel" : "Hell";
   lastCalc = calculate();
   renderDimensions(lastCalc);
   renderOrientation(lastCalc);
@@ -523,7 +550,7 @@ function render() {
 }
 
 function csvText() {
-  const header = ["Pos", "Artikel", "Art.-Nr.", "Menge", "Einheit", "Gruppe"];
+  const header = ["Pos", "Artikel", "Nebensound-Art.-Nr.", "Menge", "Einheit", "Gruppe"];
   const rows = lastCalc.materials.map((item) => [item.pos, articleText(item.article, item.artCode), artNumber(item.article, item.artCode), item.qty, unitNames[item.unit] || "Stk.", groupNames[item.group]]);
   return [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(";")).join("\n");
 }
@@ -541,34 +568,247 @@ function exportCsv() {
   triggerDownload(`nivtec-material-${fmtHalf(state.widthHalf)}x${fmtHalf(state.depthHalf)}m.csv`, `data:text/csv;charset=utf-8,${encodeURIComponent(`\ufeff${csvText()}`)}`);
 }
 
-function exportPng() {
-  const xml = technicalPlanSvg(lastCalc, true);
-  const image = new Image();
-  image.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1800;
-    canvas.height = 1272;
-    const context = canvas.getContext("2d");
-    context.fillStyle = "#fff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    triggerDownload(`nivtec-plan-${fmtHalf(state.widthHalf)}x${fmtHalf(state.depthHalf)}m.png`, canvas.toDataURL("image/png"));
+function triggerBlobDownload(name, blob) {
+  const url = URL.createObjectURL(blob);
+  triggerDownload(name, url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function rasterizePlan(type = "image/png", quality) {
+  return new Promise((resolve, reject) => {
+    const xml = technicalPlanSvg(lastCalc, true);
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1800;
+      canvas.height = 1272;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Canvas konnte nicht erstellt werden."));
+        return;
+      }
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve({ dataUrl: canvas.toDataURL(type, quality), width: canvas.width, height: canvas.height });
+    };
+    image.onerror = () => reject(new Error("Zeichnung konnte nicht gerastert werden."));
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
+  });
+}
+
+async function exportPng() {
+  const image = await rasterizePlan("image/png");
+  triggerDownload(`nivtec-plan-${fmtHalf(state.widthHalf)}x${fmtHalf(state.depthHalf)}m.png`, image.dataUrl);
+}
+
+function bytesFromDataUrl(dataUrl) {
+  const raw = atob(dataUrl.split(",")[1]);
+  const bytes = new Uint8Array(raw.length);
+  for (let index = 0; index < raw.length; index += 1) {
+    bytes[index] = raw.charCodeAt(index);
+  }
+  return bytes;
+}
+
+function pdfNumber(value) {
+  return Number(value).toFixed(2).replace(/\.00$/, "");
+}
+
+function pdfTextValue(value) {
+  let hex = "FEFF";
+  const text = String(value);
+  for (let index = 0; index < text.length; index += 1) {
+    hex += text.charCodeAt(index).toString(16).padStart(4, "0").toUpperCase();
+  }
+  return `<${hex}>`;
+}
+
+function pdfText(x, y, size, text, color = "0 0 0") {
+  return `${color} rg BT /F1 ${pdfNumber(size)} Tf 1 0 0 1 ${pdfNumber(x)} ${pdfNumber(y)} Tm ${pdfTextValue(text)} Tj ET\n`;
+}
+
+function pdfRect(x, y, width, height, color) {
+  return `${color} rg ${pdfNumber(x)} ${pdfNumber(y)} ${pdfNumber(width)} ${pdfNumber(height)} re f\n`;
+}
+
+function pdfLine(x1, y1, x2, y2, color = "0.82 0.82 0.82", width = 0.5) {
+  return `${color} RG ${pdfNumber(width)} w ${pdfNumber(x1)} ${pdfNumber(y1)} m ${pdfNumber(x2)} ${pdfNumber(y2)} l S\n`;
+}
+
+function trimForPdf(value, maxLength) {
+  const text = String(value);
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function pdfMaterialRows() {
+  const rows = [];
+  let currentGroup = 0;
+  for (const item of lastCalc.materials) {
+    if (item.group !== currentGroup) {
+      currentGroup = item.group;
+      rows.push({ type: "group", label: groupNames[item.group] });
+    }
+    rows.push({
+      type: "item",
+      pos: item.pos,
+      article: articleText(item.article, item.artCode),
+      number: artNumber(item.article, item.artCode),
+      qty: item.qty,
+      unit: unitNames[item.unit] || "Stk."
+    });
+  }
+  return rows;
+}
+
+function pdfTableHeader(y) {
+  let content = pdfRect(30, y - 18, 535, 18, "0.929 0.545 0.102");
+  content += pdfText(36, y - 12, 8, "Pos.", "1 1 1");
+  content += pdfText(66, y - 12, 8, "Artikel", "1 1 1");
+  content += pdfText(318, y - 12, 8, "Nebensound-Art.-Nr.", "1 1 1");
+  content += pdfText(456, y - 12, 8, "Menge", "1 1 1");
+  content += pdfText(512, y - 12, 8, "Einheit", "1 1 1");
+  return content;
+}
+
+function pdfTableRow(row, y) {
+  if (row.type === "group") {
+    let content = pdfRect(30, y - 16, 535, 16, "0.98 0.91 0.82");
+    content += pdfText(36, y - 11, 8, row.label, "0.45 0.23 0");
+    return { content, height: 18 };
+  }
+  let content = pdfLine(30, y - 18, 565, y - 18);
+  content += pdfText(36, y - 12, 8, row.pos);
+  content += pdfText(66, y - 12, 8, trimForPdf(row.article, 46));
+  content += pdfText(318, y - 12, 8, trimForPdf(row.number, 25));
+  content += pdfText(456, y - 12, 8, row.qty);
+  content += pdfText(512, y - 12, 8, row.unit);
+  return { content, height: 20 };
+}
+
+function appendPdfTableRows(content, rows, startIndex, startY, bottomY) {
+  let y = startY;
+  let index = startIndex;
+  content += pdfTableHeader(y);
+  y -= 24;
+  while (index < rows.length) {
+    const row = pdfTableRow(rows[index], y);
+    if (y - row.height < bottomY) break;
+    content += row.content;
+    y -= row.height;
+    index += 1;
+  }
+  return { content, index };
+}
+
+function createPdfPageContents(image) {
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const rows = pdfMaterialRows();
+  const contents = [];
+  let rowIndex = 0;
+  let firstPage = true;
+
+  while (firstPage || rowIndex < rows.length) {
+    let content = pdfRect(0, 0, pageWidth, pageHeight, "1 1 1");
+    content += pdfRect(30, 811, 84, 3, "0.929 0.545 0.102");
+    content += pdfText(30, 790, 18, "Nivtec Bühnenplan");
+    content += pdfText(30, 770, 10, `${fmtHalf(state.widthHalf)} × ${fmtHalf(state.depthHalf)} m · Höhe ${state.height} cm · ${state.footType === 0 ? "Steckfuß" : "Spindelfuß"}`, "0.25 0.25 0.25");
+
+    let tableStartY = 735;
+    if (firstPage) {
+      const imageWidth = 535;
+      const imageHeight = Math.min(378, imageWidth * image.height / image.width);
+      const imageY = 744 - imageHeight;
+      content += `q ${pdfNumber(imageWidth)} 0 0 ${pdfNumber(imageHeight)} 30 ${pdfNumber(imageY)} cm /Plan Do Q\n`;
+      content += pdfText(30, imageY - 21, 11, "Materialliste");
+      tableStartY = imageY - 36;
+    } else {
+      content += pdfText(30, 747, 11, "Materialliste · Fortsetzung");
+    }
+
+    const result = appendPdfTableRows(content, rows, rowIndex, tableStartY, 36);
+    contents.push(result.content);
+    rowIndex = result.index;
+    firstPage = false;
+  }
+
+  return contents;
+}
+
+function pdfStream(content) {
+  const bytes = new TextEncoder().encode(content);
+  return [`<< /Length ${bytes.length} >>\nstream\n`, bytes, "\nendstream"];
+}
+
+function buildPdf(objects) {
+  const encoder = new TextEncoder();
+  const chunks = [];
+  const offsets = [0];
+  let byteOffset = 0;
+  const append = (part) => {
+    const bytes = typeof part === "string" ? encoder.encode(part) : part;
+    chunks.push(bytes);
+    byteOffset += bytes.length;
   };
-  image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
+
+  append("%PDF-1.4\n%âãÏÓ\n");
+  for (let id = 1; id < objects.length; id += 1) {
+    offsets[id] = byteOffset;
+    append(`${id} 0 obj\n`);
+    const object = objects[id];
+    if (Array.isArray(object)) {
+      object.forEach(append);
+    } else {
+      append(object);
+    }
+    append("\nendobj\n");
+  }
+
+  const xrefOffset = byteOffset;
+  append(`xref\n0 ${objects.length}\n0000000000 65535 f \n`);
+  for (let id = 1; id < objects.length; id += 1) {
+    append(`${String(offsets[id]).padStart(10, "0")} 00000 n \n`);
+  }
+  append(`trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+  return new Blob(chunks, { type: "application/pdf" });
+}
+
+async function exportPdf() {
+  const image = await rasterizePlan("image/jpeg", 0.94);
+  const imageBytes = bytesFromDataUrl(image.dataUrl);
+  const pageContents = createPdfPageContents(image);
+  const objects = [];
+  const pageIds = pageContents.map((_, index) => 5 + index * 2);
+  const contentIds = pageContents.map((_, index) => 6 + index * 2);
+
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  objects[4] = [`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imageBytes.length} >>\nstream\n`, imageBytes, "\nendstream"];
+
+  pageContents.forEach((content, index) => {
+    const pageId = pageIds[index];
+    const contentId = contentIds[index];
+    objects[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R >> /XObject << /Plan 4 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects[contentId] = pdfStream(content);
+  });
+
+  triggerBlobDownload(`nivtec-plan-${fmtHalf(state.widthHalf)}x${fmtHalf(state.depthHalf)}m.pdf`, buildPdf(objects));
 }
 
 function prepareMail() {
   const body = [
-    "Anfrage über Nivtec Rust/WASM Planer",
+    "Anfrage über den Nivtec Bühnenplaner",
     "",
     `Größe: ${fmtHalf(state.widthHalf)} × ${fmtHalf(state.depthHalf)} m`,
     `Höhe: ${state.height} cm`,
     `Fußtyp: ${state.footType === 0 ? "Steckfuß fest" : "Steckfuß mit Layher-Verstellspindel"}`,
     "",
     "Materialliste:",
-    ...lastCalc.materials.map((item) => `${item.pos}. ${articleText(item.article, item.artCode)} — ${item.qty} ${unitNames[item.unit] || "Stk."}`)
+    ...lastCalc.materials.map((item) => `${item.pos}. ${articleText(item.article, item.artCode)} (${artNumber(item.article, item.artCode)}) — ${item.qty} ${unitNames[item.unit] || "Stk."}`)
   ].join("\n");
-  window.location.href = `mailto:info@example.com?subject=${encodeURIComponent(`Bühnenanfrage ${fmtHalf(state.widthHalf)}×${fmtHalf(state.depthHalf)} m`)}&body=${encodeURIComponent(body)}`;
+  window.location.href = `mailto:info@nebensound.com?subject=${encodeURIComponent(`Bühnenanfrage ${fmtHalf(state.widthHalf)}×${fmtHalf(state.depthHalf)} m`)}&body=${encodeURIComponent(body)}`;
 }
 
 function bindEvents() {
@@ -580,7 +820,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.footType = Number(button.dataset.foot);
       if (state.footType === 0) state.height = [20, 40, 60, 80, 100, 120].reduce((best, value) => Math.abs(value - state.height) < Math.abs(best - state.height) ? value : best, 20);
-      if (state.footType === 1 && state.height < 40) state.height = 40;
+      if (state.footType === 1 && state.height < 20) state.height = 20;
       render();
     });
   });
@@ -596,11 +836,14 @@ function bindEvents() {
   });
   $("themeButton").addEventListener("click", () => {
     state.theme = state.theme === "light" ? "dark" : "light";
-    localStorage.setItem("nivtec-rust-theme", state.theme);
+    localStorage.setItem("nivtec-theme", state.theme);
+    localStorage.removeItem("nivtec-rust-theme");
     render();
   });
   $("csvButton").addEventListener("click", exportCsv);
   $("csvButtonTop").addEventListener("click", exportCsv);
+  $("pdfButton").addEventListener("click", exportPdf);
+  $("pdfButtonTop").addEventListener("click", exportPdf);
   $("pngButton").addEventListener("click", exportPng);
   $("mailButton").addEventListener("click", prepareMail);
   $("mailButtonTop").addEventListener("click", prepareMail);
