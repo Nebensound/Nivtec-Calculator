@@ -1,2 +1,3 @@
+ModPagespeed off
 AddType application/wasm .wasm
 DirectoryIndex index.html
