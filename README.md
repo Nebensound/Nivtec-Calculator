@@ -57,6 +57,32 @@ Dann öffnen:
 http://127.0.0.1:8765/web/
 ```
 
+## Deployment über Plesk
+
+Die GitHub Action baut bei jedem Push auf `main` das WASM-Modul, prüft Formatierung und veröffentlicht anschließend einen flachen Deploy-Branch `deploy`.
+
+Der Branch `deploy` enthält nur die Dateien, die Plesk direkt ausliefern soll:
+
+```text
+index.html
+app.js
+styles.css
+pkg/nivtec_core.wasm
+.htaccess
+.nojekyll
+```
+
+Plesk sollte deshalb so konfiguriert werden:
+
+- Repository: `https://github.com/Nebensound/Nivtec-Calculator.git`
+- Branch: `deploy`
+- Deployment: automatisch nach Push
+- Document Root: der von Plesk ausgecheckte Repository-Ordner
+
+Die `.htaccess` im Deploy-Branch setzt den MIME-Type für `.wasm` auf `application/wasm`.
+
+Die Action schreibt den WASM-Pfad für den Deploy-Branch automatisch von `../pkg/nivtec_core.wasm` auf `./pkg/nivtec_core.wasm` um.
+
 ## Checks vor Commit
 
 ```bash

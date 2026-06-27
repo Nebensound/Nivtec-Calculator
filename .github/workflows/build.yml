@@ -1,12 +1,14 @@
-name: Build
+name: Build and Deploy
 
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,11 +34,55 @@ jobs:
       - name: Verify committed WASM is current
         run: cmp target/wasm32-unknown-unknown/release/nivtec_core.wasm pkg/nivtec_core.wasm
 
-      - name: Upload static app artifact
+      - name: Prepare Plesk deploy files
+        run: |
+          rm -rf dist
+          mkdir -p dist/pkg
+          cp web/index.html dist/index.html
+          cp web/app.js dist/app.js
+          cp web/styles.css dist/styles.css
+          cp pkg/nivtec_core.wasm dist/pkg/nivtec_core.wasm
+          sed -i 's#../pkg/nivtec_core.wasm#./pkg/nivtec_core.wasm#g' dist/app.js
+          cat > dist/.htaccess <<'EOF'
+          AddType application/wasm .wasm
+          DirectoryIndex index.html
+          EOF
+
+      - name: Upload deploy artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nivtec-calculator-static
+          name: nivtec-calculator-plesk
           path: |
-            web/
-            pkg/nivtec_core.wasm
-            README.md
+            dist/
+
+      - name: Publish deploy branch
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          deploy_dir="$(mktemp -d)"
+          cp -R dist/. "$deploy_dir/"
+
+          git fetch origin deploy || true
+          if git show-ref --verify --quiet refs/remotes/origin/deploy; then
+            git switch --force-create deploy origin/deploy
+          else
+            git switch --orphan deploy
+            git rm -rf . >/dev/null 2>&1 || true
+          fi
+
+          shopt -s dotglob nullglob
+          for path in *; do
+            if [[ "$path" == ".git" ]]; then
+              continue
+            fi
+            rm -rf "$path"
+          done
+
+          cp -R "$deploy_dir"/. .
+          touch .nojekyll
+          git add .
+          git commit -m "Deploy static calculator" || exit 0
+          git push origin deploy
