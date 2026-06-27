@@ -2,7 +2,7 @@
 
 Rust/WASM-basierter Bühnenplaner für Nivtec-Systempodeste mit einer Weboberfläche im Nebensound-Stil.
 
-Die Berechnung läuft lokal im Browser: Rust erzeugt die Bühnenlogik und wird als WebAssembly-Modul geladen. Die Weboberfläche rendert daraus Materialliste, Kennzahlen und eine PDF-nahe technische Zeichnung, die als PNG exportiert werden kann.
+Die Berechnung läuft lokal im Browser: Rust erzeugt die Bühnenlogik und wird als WebAssembly-Modul geladen. Die Weboberfläche rendert daraus Materialliste, Kennzahlen und eine technische Zeichnung, die als PDF mit Materialliste sowie als PNG exportiert werden kann.
 
 ## Fachliche Quelle
 
@@ -28,6 +28,13 @@ Das alte EVTP-Tool ist keine fachliche Quelle. Es darf nur als grobe Produktidee
 - `web/styles.css` — Nebensound-orientiertes Styling
 - `.github/workflows/build.yml` — GitHub Actions Build-Check
 - `.github/copilot-instructions.md` — Projektanweisungen für GitHub Copilot
+
+## Export und Anfrage
+
+- PDF-Export: technische Zeichnung oben, Materialliste darunter.
+- PNG-Export: reine Zeichnung für schnelle Abstimmung.
+- CSV-Export: Materialliste mit Nebensound-Artikelnummern.
+- Anfrage: aktuell Mail-Fallback an `info@nebensound.com`; eine direkte Rentman-Anbindung benötigt später eine API-Konfiguration.
 
 ## Voraussetzungen
 

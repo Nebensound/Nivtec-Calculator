@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#181818">
   <title>NEBENSOUND — Nivtec Bühnenplaner</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23000'/%3E%3Crect x='14' y='30' width='8' height='20' fill='%23ed8b1a'/%3E%3Crect x='28' y='18' width='8' height='32' fill='%23ed8b1a'/%3E%3Crect x='42' y='24' width='8' height='26' fill='%23ed8b1a'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" href="https://nebensound.com/images/96x96/13323182/xNebensound_Logo2.png.pagespeed.ic.IjShUcr2GU.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main class="app">
     <header class="siteHeader">
       <a class="brand" href="https://nebensound.com/de/" rel="noopener">
-        <span class="brandMark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span><strong>NEBENSOUND</strong><small>Stage planner</small></span>
+        <img class="brandLogo" src="https://nebensound.com/images/1024/7556945/xNebensound_Logo_white.png.pagespeed.ic.yEDJd8XZph.png" alt="Nebensound">
+        <span class="brandSubline">Stage planner</span>
       </a>
       <nav class="siteNav" aria-label="Seitenbereiche">
         <a href="#planner">Planung</a>
@@ -24,12 +24,13 @@
 
     <section class="hero">
       <div>
-        <div class="pill">Nivtec Stage Planner · Rust/WASM</div>
-        <h1>Bühnenplanung im Nebensound-Look.</h1>
-        <p>Material, Raster und PDF-nahe Zeichnung entstehen lokal im Browser. Fachliche Quelle ist das Nivtec-PDF „Aufbauregeln in ihrer einfachsten Form“, nicht das alte Referenztool.</p>
+        <div class="pill">Nivtec Stage Planner</div>
+        <h1>BÜHNENPLANUNG the NEBENSOUND way</h1>
+        <p>Material, Raster und technische Zeichnung entstehen direkt im Browser. Fachliche Quelle sind die Nivtec-Aufbauregeln in ihrer einfachsten Form.</p>
       </div>
       <div class="heroActions">
         <button id="themeButton" type="button" class="button secondary">Design</button>
+        <button id="pdfButtonTop" type="button" class="button secondary">PDF Export</button>
         <button id="csvButtonTop" type="button" class="button secondary">CSV Export</button>
         <button id="mailButtonTop" type="button" class="button primary">Anfrage</button>
       </div>
@@ -81,9 +82,10 @@
             <div class="head">
               <div>
                 <h2>Grundriss</h2>
-                <p class="sub">PDF-nahe technische SVG-Zeichnung: Raster, Fußpunkte, Nut/Feder, START und Verstrebungsmarkierungen.</p>
+                <p class="sub">Technische Zeichnung mit Raster, Fußpunkten, Nut/Feder, START und Verstrebungsmarkierungen.</p>
               </div>
               <div class="actions">
+                <button id="pdfButton" type="button" class="button primary small">PDF</button>
                 <button id="pngButton" type="button" class="button secondary small">PNG</button>
                 <button id="csvButton" type="button" class="button secondary small">CSV</button>
               </div>
@@ -117,13 +119,13 @@
           <div class="head">
             <div>
               <h2>Materialliste</h2>
-              <p class="sub">Podeste, Füße und Geländer werden mengenmäßig berechnet. Verstrebungen werden als PDF-Schema ausgewiesen.</p>
+              <p class="sub">Podeste, Füße und Geländer werden mengenmäßig berechnet. Verstrebungen werden nach Nivtec-Aufbauschema ausgewiesen.</p>
             </div>
             <button id="mailButton" type="button" class="button primary small">Anfrage</button>
           </div>
           <div class="tableWrap">
             <table>
-              <thead><tr><th>Pos.</th><th>Artikel</th><th>Art.-Nr.</th><th>Menge</th><th>Einheit</th></tr></thead>
+              <thead><tr><th>Pos.</th><th>Artikel</th><th>Nebensound-Art.-Nr.</th><th>Menge</th><th>Einheit</th></tr></thead>
               <tbody id="materials"></tbody>
             </table>
           </div>

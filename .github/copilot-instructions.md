@@ -34,8 +34,9 @@ Do not treat the old EVTP calculator as a technical source. It can only inform r
 ## UI and export expectations
 
 - Overall site design should stay close to `nebensound.com`: black/dark base, white typography, orange `#ed8b1a` accents, uppercase navigation/buttons.
-- Exported PNG drawings should look close to the PDF drawings: white page, black grid, foot dots, START label, Nut/Feder labels, red diagonal arrows, green horizontal bracing where applicable.
-- The exported PNG should be generated from the same technical SVG style as the preview.
+- PDF export should contain the technical drawing first and the material list below it, continuing on additional pages when needed.
+- Exported PDF/PNG drawings should look close to the Nivtec setup drawings: white page, black grid, foot dots, START label, Nut/Feder labels, red diagonal arrows, green horizontal bracing where applicable.
+- PDF and PNG should be generated from the same technical SVG style as the preview.
 
 ## Validation
 
